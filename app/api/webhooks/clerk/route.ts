@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { Webhook } from 'svix';
+import prisma from '@/app/lib/prisma';
 // import { ge tDbConnection } from '@/lib/db';
 
 
@@ -38,13 +39,19 @@ export async function POST(req: NextRequest) {
   const { id, email_addresses, first_name, last_name } = evt.data;
   const full_name = first_name+last_name;
   const eventType = evt.type;
-
+  const primaryEmailAddress = email_addresses[0]?.email_address;
   if (eventType === 'user.created') {
     try {
-
-        // CREATE THE USER IN THE DB
-        
+        const newUser = prisma.user.create({
+          data:{
+            id,
+            clerkId:id,
+            email:primaryEmailAddress,
+            name:full_name
+          }
+        })  
         console.log(`User ${id} added to database`);
+        NextResponse.json({message:"user created in the DB successfully"})
     } catch (error) {
         console.error('Error adding user to database:', error);
         return NextResponse.json({"message":'Error adding user',error}, { status: 400 });
@@ -52,5 +59,5 @@ export async function POST(req: NextRequest) {
   }
 
 
-  return NextResponse.json({'message':"verified webhook successfully"})
+  return NextResponse.json({'message':"verified clerk webhook successfully"})
 }
